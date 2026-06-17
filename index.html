@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="theme-color" content="#ff6b35">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <title>今天到底吃什么</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div id="app">
+
+  <!-- 顶部栏 -->
+  <div class="top-bar">
+    <div class="top-bar-title">今天到底吃什么</div>
+    <div class="top-bar-date" id="top-date"></div>
+  </div>
+
+  <!-- 主页 -->
+  <div id="page-home" class="page">
+    <div id="step-container"></div>
+  </div>
+
+  <!-- 饮食日历 -->
+  <div id="page-calendar" class="page" style="display:none">
+    <div id="calendar-body"></div>
+  </div>
+
+  <!-- 月度诊断 -->
+  <div id="page-diagnosis" class="page" style="display:none">
+    <div id="diagnosis-body"></div>
+  </div>
+
+  <!-- 底部导航 -->
+  <nav class="bottom-nav">
+    <button class="nav-item active" data-view="home">
+      <span class="nav-icon">🍴</span>
+      <span>今天吃啥</span>
+    </button>
+    <button class="nav-item" data-view="calendar">
+      <span class="nav-icon">📅</span>
+      <span>饮食日历</span>
+    </button>
+    <button class="nav-item" data-view="diagnosis">
+      <span class="nav-icon">📊</span>
+      <span>月度诊断</span>
+    </button>
+  </nav>
+
+  <!-- 日期详情弹窗 -->
+  <div id="day-modal">
+    <div id="modal-content"></div>
+  </div>
+
+  <!-- Toast提示 -->
+  <div id="toast"></div>
+
+</div>
+
+<!-- 顶部日期 -->
+<script>
+  (function() {
+    const days = ['日','一','二','三','四','五','六'];
+    const d = new Date();
+    document.getElementById('top-date').textContent =
+      `${d.getMonth()+1}月${d.getDate()}日 周${days[d.getDay()]}`;
+  })();
+</script>
+
+<script src="data.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

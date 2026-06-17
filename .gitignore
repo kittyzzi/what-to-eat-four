@@ -1,0 +1,5 @@
+.workbuddy/
+*.py
+*.pyc
+__pycache__/
+README.md.txt
