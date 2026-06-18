@@ -2,7 +2,7 @@
 
 // ==================== 全局状态 ====================
 const AppState = {
-  step: 1,         // 当前步骤 1-5
+  step: 1,         // 当前步骤 1-5 | 'candidates' | 'breakfast'
   mealType: '',    // 餐次: breakfast | lunch | dinner
   bodyStatus: '',  // 身体状态
   mood: '',        // 心情/症状
@@ -14,6 +14,9 @@ const AppState = {
   currentFood: null,  // 当前推荐食物
   rejectedIds: [],    // 本次已拒绝的推荐ID
   view: 'home',       // home | calendar | diagnosis
+  // 早餐专用
+  breakfastCombo: null,       // { main, drink }
+  breakfastRejectedMainIds: [], // 早餐已拒绝的主食 id
 };
 
 // ==================== localStorage操作 ====================
@@ -102,6 +105,7 @@ function renderStep() {
   else if (AppState.step === 4) renderStep4(container);
   else if (AppState.step === 5) renderStep5(container);
   else if (AppState.step === 'candidates') renderCandidatesPage(container);
+  else if (AppState.step === 'breakfast') renderBreakfastPage(container);
 }
 
 function renderStep1(container) {
@@ -154,7 +158,14 @@ function renderStep1(container) {
 
 function selectMealType(type) {
   AppState.mealType = type;
-  AppState.step = 2;
+  if (type === 'breakfast') {
+    // 早餐直通：不经过状态选择，直接生成搭配
+    AppState.breakfastRejectedMainIds = [];
+    AppState.breakfastCombo = getBreakfastCombo([]);
+    AppState.step = 'breakfast';
+  } else {
+    AppState.step = 2;
+  }
   renderStep();
 }
 
@@ -215,6 +226,105 @@ function getCardRecommendation(food) {
 function goBackFromCandidates() {
   AppState.step = 2;
   // 保留 craving 状态以便回到 step2 后可见已选
+  renderStep();
+}
+
+// ==================== 早餐推荐页 ====================
+function renderBreakfastPage(container) {
+  const combo = AppState.breakfastCombo;
+  if (!combo) {
+    container.innerHTML = `<div class="error-msg">获取早餐推荐失败，请重试</div>`;
+    return;
+  }
+  const { main, drink } = combo;
+
+  container.innerHTML = `
+    <div class="breakfast-page">
+      <div class="breakfast-page-title">🌅 今天早餐</div>
+      <div class="breakfast-page-subtitle">主食 + 饮品，两步搞定</div>
+
+      <div class="breakfast-combo-card">
+        <div class="breakfast-combo-item main-item">
+          <div class="breakfast-item-emoji">${main.emoji}</div>
+          <div class="breakfast-item-body">
+            <div class="breakfast-item-label">主食</div>
+            <div class="breakfast-item-name">${main.name}</div>
+            <div class="breakfast-item-desc">${main.desc}</div>
+            <div class="breakfast-item-price">💰 约 ${main.priceRange[0]}-${main.priceRange[1]} 元</div>
+          </div>
+        </div>
+        <div class="breakfast-combo-plus">+</div>
+        <div class="breakfast-combo-item drink-item">
+          <div class="breakfast-item-emoji">${drink.emoji}</div>
+          <div class="breakfast-item-body">
+            <div class="breakfast-item-label">饮品</div>
+            <div class="breakfast-item-name">${drink.name}</div>
+            <div class="breakfast-item-desc">${drink.desc}</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="breakfast-actions">
+        <button class="btn-ok" onclick="confirmBreakfast()">✅ OK，就这个</button>
+        <button class="btn-retry" onclick="retryBreakfast()">🔄 换一个</button>
+      </div>
+      <button class="back-btn" onclick="goBackFromBreakfast()">← 返回</button>
+    </div>
+  `;
+}
+
+function retryBreakfast() {
+  if (AppState.breakfastCombo && AppState.breakfastCombo.main) {
+    AppState.breakfastRejectedMainIds.push(AppState.breakfastCombo.main.id);
+  }
+  AppState.breakfastCombo = getBreakfastCombo(AppState.breakfastRejectedMainIds);
+  const container = document.getElementById('step-container');
+  renderBreakfastPage(container);
+  // 滑入动画
+  const card = container.querySelector('.breakfast-combo-card');
+  if (card) {
+    card.classList.remove('slide-in');
+    void card.offsetWidth;
+    card.classList.add('slide-in');
+  }
+}
+
+function confirmBreakfast() {
+  const combo = AppState.breakfastCombo;
+  if (!combo) return;
+
+  const record = {
+    date: getTodayStr(),
+    mealType: 'breakfast',
+    meal: '早餐',
+    foodName: combo.main.name + ' + ' + combo.drink.name,
+    foodId: combo.main.id,
+    bodyStatus: '身体正常',
+    mood: '早餐快速决策',
+    wallet: '日常省心',
+    tag: '正常饱腹',
+    taunt: getTaunt(),
+    reason: combo.main.desc,
+    avoid: combo.drink.desc,
+    priceRange: combo.main.priceRange,
+    recordedAt: new Date().toISOString(),
+  };
+  saveRecord(record);
+  showConfirmToast(getConfirm());
+  setTimeout(() => {
+    AppState.step = 1;
+    AppState.mealType = '';
+    AppState.breakfastCombo = null;
+    AppState.breakfastRejectedMainIds = [];
+    renderStep();
+  }, 1800);
+}
+
+function goBackFromBreakfast() {
+  AppState.step = 1;
+  AppState.mealType = '';
+  AppState.breakfastCombo = null;
+  AppState.breakfastRejectedMainIds = [];
   renderStep();
 }
 

@@ -2522,8 +2522,50 @@ function hasCravingMatch(craving, mealType) {
   });
 }
 
+// ==================== 早餐数据库 ====================
+// 主食列表
+const BREAKFAST_MAINS = [
+  { id: 'bm_01', name: '水晶饺', emoji: '🥟', desc: '皮薄馅嫩，一口一个不费力。', priceRange: [5, 10] },
+  { id: 'bm_02', name: '煎饺', emoji: '🥟', desc: '底部煎得焦脆，里面还是软的，两种口感一勺端。', priceRange: [5, 10] },
+  { id: 'bm_03', name: '奥尔良肉包', emoji: '🥩', desc: '香辣微甜，肉汁饱满，早上来一个瞬间醒神。', priceRange: [3, 7] },
+  { id: 'bm_04', name: '紫薯包', emoji: '🫐', desc: '甜而不腻，紫薯馅扎实，早上的第一口甜。', priceRange: [3, 6] },
+  { id: 'bm_05', name: '热干面', emoji: '🍜', desc: '芝麻酱拌到底，武汉早餐的灵魂担当。', priceRange: [6, 12] },
+  { id: 'bm_06', name: '肠粉', emoji: '🌯', desc: '嫩滑Q弹，浇上酱汁，吃完神清气爽。', priceRange: [5, 10] },
+  { id: 'bm_07', name: '鸡蛋灌饼', emoji: '🫓', desc: '饼皮酥脆，鸡蛋饱腹，加根火腿更完美。', priceRange: [5, 10] },
+  { id: 'bm_08', name: '猪肉包', emoji: '🥩', desc: '汤汁足、肉馅扎实，手里捧一个热腾腾的。', priceRange: [2, 5] },
+  { id: 'bm_09', name: '小笼包', emoji: '🥟', desc: '轻轻咬破，汤汁顺着嘴角——早上的小确幸。', priceRange: [8, 15] },
+  { id: 'bm_10', name: '葱油拌面', emoji: '🍜', desc: '简单直接，葱香扑鼻，一碗下肚神清气爽。', priceRange: [6, 10] },
+  { id: 'bm_11', name: '豆腐脑', emoji: '🥣', desc: '嫩滑豆腐浇上咸鲜卤汁，暖胃又舒适。', priceRange: [4, 8] },
+  { id: 'bm_12', name: '油条', emoji: '🥖', desc: '外酥里嫩，掰开蘸豆浆，经典不解释。', priceRange: [2, 5] },
+];
+
+// 饮品列表
+const BREAKFAST_DRINKS = [
+  { id: 'bd_01', name: '豆浆', emoji: '🥛', desc: '热的，微微香甜，早上一杯最稳妥。' },
+  { id: 'bd_02', name: '茶叶蛋', emoji: '🥚', desc: '一颗茶叶蛋，蛋白质到位，还带点卤香。' },
+  { id: 'bd_03', name: '牛奶', emoji: '🍼', desc: '一盒纯牛奶，简单粗暴，补钙补蛋白。' },
+  { id: 'bd_04', name: '热豆浆', emoji: '🫖', desc: '浓一点的热豆浆，暖胃暖手，早上专用。' },
+  { id: 'bd_05', name: '白开水', emoji: '💧', desc: '清醒第一步先喝水，什么都不如白开水简单。' },
+  { id: 'bd_06', name: '蜂蜜柚子茶', emoji: '🍋', desc: '酸甜微苦，清口又提神，上班前喝一杯心情好。' },
+];
+
+/**
+ * 随机获取一组早餐搭配（主食 + 饮品）
+ * @param {string[]} excludeMainIds  上一次排除的主食 id
+ * @returns {{ main: object, drink: object }}
+ */
+function getBreakfastCombo(excludeMainIds) {
+  excludeMainIds = excludeMainIds || [];
+  // 优先从未出现的主食中随机，如果全被排除了则全量随机
+  let mainPool = BREAKFAST_MAINS.filter(m => !excludeMainIds.includes(m.id));
+  if (mainPool.length === 0) mainPool = BREAKFAST_MAINS;
+  const main = mainPool[Math.floor(Math.random() * mainPool.length)];
+  const drink = BREAKFAST_DRINKS[Math.floor(Math.random() * BREAKFAST_DRINKS.length)];
+  return { main, drink };
+}
+
 // 导出
 if (typeof module !== 'undefined') {
-  module.exports = { FOOD_DATABASE, TAUNT_POOL, CONFIRM_POOL, getTaunt, getConfirm, getRecommendations, isPriceMatch, getCravingTags, hasCravingMatch };
+  module.exports = { FOOD_DATABASE, BREAKFAST_MAINS, BREAKFAST_DRINKS, TAUNT_POOL, CONFIRM_POOL, getTaunt, getConfirm, getRecommendations, isPriceMatch, getCravingTags, hasCravingMatch, getBreakfastCombo };
 }
 
