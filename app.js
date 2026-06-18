@@ -244,7 +244,7 @@ function renderBreakfastPage(container) {
   if (side && side.priceRange) { minPrice += side.priceRange[0]; maxPrice += side.priceRange[1]; }
   if (drink && drink.priceRange) { minPrice += drink.priceRange[0]; maxPrice += drink.priceRange[1]; }
 
-  // 构建套餐内容（不再使用"主食/配菜/饮品"标签，统一为套餐项）
+  // 构建套餐内容，每个单品右侧增加"只选这个"按钮
   let itemsHtml = `
     <div class="breakfast-set-item">
       <span class="breakfast-set-emoji">${main.emoji}</span>
@@ -252,6 +252,7 @@ function renderBreakfastPage(container) {
         <div class="breakfast-set-name">${main.name}</div>
         <div class="breakfast-set-desc">${main.desc}</div>
       </div>
+      <button class="breakfast-pick-btn" onclick="confirmSingleBreakfast('main')">只选这个</button>
     </div>`;
 
   if (side) {
@@ -262,6 +263,7 @@ function renderBreakfastPage(container) {
         <div class="breakfast-set-name">${side.name}</div>
         <div class="breakfast-set-desc">${side.desc}</div>
       </div>
+      <button class="breakfast-pick-btn" onclick="confirmSingleBreakfast('side')">只选这个</button>
     </div>`;
   }
 
@@ -273,6 +275,7 @@ function renderBreakfastPage(container) {
         <div class="breakfast-set-name">${drink.name}</div>
         <div class="breakfast-set-desc">${drink.desc}</div>
       </div>
+      <button class="breakfast-pick-btn" onclick="confirmSingleBreakfast('drink')">只选这个</button>
     </div>`;
   }
 
@@ -287,8 +290,8 @@ function renderBreakfastPage(container) {
       </div>
 
       <div class="breakfast-actions">
-        <button class="btn-ok" onclick="confirmBreakfast()">✅ OK，就这个</button>
-        <button class="btn-retry" onclick="retryBreakfast()">🔄 换一个</button>
+        <button class="btn-ok" onclick="confirmBreakfast()">✅ OK，就这个套餐</button>
+        <button class="btn-retry" onclick="retryBreakfast()">🔄 换一个套餐</button>
       </div>
       <button class="back-btn" onclick="goBackFromBreakfast()">← 返回</button>
     </div>
@@ -309,6 +312,44 @@ function retryBreakfast() {
     void card.offsetWidth;
     card.classList.add('slide-in');
   }
+}
+
+/**
+ * 只选择套餐中的某一个单品作为早餐
+ * @param {'main'|'side'|'drink'} itemKey
+ */
+function confirmSingleBreakfast(itemKey) {
+  const combo = AppState.breakfastCombo;
+  if (!combo || !combo[itemKey]) return;
+
+  const item = combo[itemKey];
+  const price = item.priceRange || [0, 0];
+
+  const record = {
+    date: getTodayStr(),
+    mealType: 'breakfast',
+    meal: '早餐',
+    foodName: item.name,
+    foodId: item.id,
+    bodyStatus: '身体正常',
+    mood: '早餐快速决策',
+    wallet: '日常省心',
+    tag: '正常饱腹',
+    taunt: getTaunt(),
+    reason: item.desc,
+    avoid: item.desc,
+    priceRange: [price[0], price[1]],
+    recordedAt: new Date().toISOString(),
+  };
+  saveRecord(record);
+  showConfirmToast(getConfirm());
+  setTimeout(() => {
+    AppState.step = 1;
+    AppState.mealType = '';
+    AppState.breakfastCombo = null;
+    AppState.breakfastRejectedMainIds = [];
+    renderStep();
+  }, 1800);
 }
 
 function confirmBreakfast() {

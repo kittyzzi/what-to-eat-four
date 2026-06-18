@@ -1737,6 +1737,32 @@ html, body {
   gap: 2px;
 }
 
+.breakfast-pick-btn {
+  flex-shrink: 0;
+  align-self: center;
+  padding: 5px 10px;
+  font-size: 11.5px;
+  font-weight: 500;
+  color: #c0895e;
+  background: transparent;
+  border: 1px solid #e8d5c0;
+  border-radius: 14px;
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+  line-height: 1;
+}
+
+.breakfast-pick-btn:hover {
+  color: #fff;
+  background: #e07b3c;
+  border-color: #e07b3c;
+}
+
+.breakfast-pick-btn:active {
+  transform: scale(0.95);
+}
+
 .breakfast-set-name {
   font-size: 17px;
   font-weight: 700;
