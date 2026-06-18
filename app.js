@@ -22,6 +22,11 @@ const AppState = {
   lunchRejectedIds: [],       // 本次午餐已拒绝的ID
   lunchCategoryFilter: '',    // 午餐分类筛选条件（空=不想思考）
   cameFromLunchCandidate: false, // 是否来自午餐候选流程
+  // 晚餐简化流程专用
+  dinnerCandidates: [],       // 当前4个晚餐候选
+  dinnerRejectedIds: [],      // 本次晚餐已拒绝的ID
+  dinnerCategoryFilter: '',   // 晚餐分类筛选条件（空=今晚吃这个）
+  cameFromDinnerCandidate: false, // 是否来自晚餐候选流程
 };
 
 // ==================== localStorage操作 ====================
@@ -114,6 +119,9 @@ function renderStep() {
   else if (AppState.step === 'lunch_entry') renderLunchEntry(container);
   else if (AppState.step === 'lunch_category') renderLunchCategory(container);
   else if (AppState.step === 'lunch_candidates') renderLunchCandidates(container);
+  else if (AppState.step === 'dinner_entry') renderDinnerEntry(container);
+  else if (AppState.step === 'dinner_category') renderDinnerCategory(container);
+  else if (AppState.step === 'dinner_candidates') renderDinnerCandidates(container);
 }
 
 function renderStep1(container) {
@@ -176,6 +184,11 @@ function selectMealType(type) {
     AppState.lunchRejectedIds = [];
     AppState.lunchCategoryFilter = '';
     AppState.step = 'lunch_entry';
+  } else if (type === 'dinner') {
+    // 晚餐简化：双入口模式
+    AppState.dinnerRejectedIds = [];
+    AppState.dinnerCategoryFilter = '';
+    AppState.step = 'dinner_entry';
   } else {
     AppState.step = 2;
   }
@@ -585,6 +598,167 @@ function reshuffleLunchCandidates() {
   renderStep();
   // 滑入动画
   const grid = document.querySelector('.lunch-candidates-grid');
+  if (grid) {
+    grid.classList.remove('slide-in');
+    void grid.offsetWidth;
+    grid.classList.add('slide-in');
+  }
+}
+
+// ==================== 晚餐简化流程 ====================
+
+// 晚餐入口：双选择
+function renderDinnerEntry(container) {
+  container.innerHTML = `
+    <div class="dinner-entry-page">
+      <div class="dinner-entry-title">🍲 晚餐时间</div>
+      <div class="dinner-entry-sub">累了一天，少做点决定吧。</div>
+
+      <div class="dinner-entry-grid">
+        <button class="dinner-entry-card no-think" onclick="selectDinnerMode('no_think')">
+          <div class="dinner-entry-emoji">🌙</div>
+          <div class="dinner-entry-card-title">今晚吃这个</div>
+          <div class="dinner-entry-card-sub">不用想，直接给你几个今晚能吃的。</div>
+        </button>
+        <button class="dinner-entry-card with-idea" onclick="selectDinnerMode('with_idea')">
+          <div class="dinner-entry-emoji">🤤</div>
+          <div class="dinner-entry-card-title">我有点想法</div>
+          <div class="dinner-entry-card-sub">我大概知道想吃什么。</div>
+        </button>
+      </div>
+
+      <button class="back-btn" onclick="goBack()">← 返回</button>
+    </div>
+  `;
+}
+
+function selectDinnerMode(mode) {
+  AppState.dinnerRejectedIds = [];
+  AppState.dinnerCategoryFilter = '';
+
+  if (mode === 'no_think') {
+    // 今晚吃这个：直接随机4个晚餐候选
+    AppState.dinnerCandidates = getDinnerCandidates(4, AppState.dinnerRejectedIds, '');
+    AppState.step = 'dinner_candidates';
+  } else {
+    // 我有点想法：先选分类
+    AppState.step = 'dinner_category';
+  }
+  renderStep();
+}
+
+// 晚餐分类选择页
+function renderDinnerCategory(container) {
+  const tags = [
+    { key: '粉面', emoji: '🍜' },
+    { key: '米饭', emoji: '🍚' },
+    { key: '云吞饺子', emoji: '🥟' },
+    { key: '烧烤', emoji: '🔥' },
+    { key: '重口味', emoji: '🌶️' },
+    { key: '热汤', emoji: '🥣' },
+  ];
+
+  // 统计各分类的晚餐菜品数量
+  const tagCounts = {};
+  const pool = getDinnerPool();
+  tags.forEach(t => {
+    const count = pool.filter(f => matchDinnerCategory(f, t.key)).length;
+    tagCounts[t.key] = count;
+  });
+
+  container.innerHTML = `
+    <div class="dinner-category-page">
+      <div class="dinner-category-title">🤤 想吃哪一类？</div>
+      <div class="dinner-category-sub">选一个方向，我来帮你缩小范围。</div>
+
+      <div class="dinner-category-grid">
+        ${tags.map(t => `
+          <button class="dinner-category-tag ${tagCounts[t.key] === 0 ? 'disabled' : ''}"
+                  ${tagCounts[t.key] === 0 ? 'disabled' : `onclick="selectDinnerCategoryTag('${t.key}')"`}>
+            <span class="dinner-category-emoji">${t.emoji}</span>
+            <span class="dinner-category-name">${t.key}</span>
+            <span class="dinner-category-count">${tagCounts[t.key]}</span>
+          </button>
+        `).join('')}
+      </div>
+
+      <button class="back-btn" onclick="goBack()">← 返回</button>
+    </div>
+  `;
+}
+
+function selectDinnerCategoryTag(cat) {
+  AppState.dinnerCategoryFilter = cat;
+  AppState.dinnerRejectedIds = [];
+  AppState.dinnerCandidates = getDinnerCandidates(4, AppState.dinnerRejectedIds, cat);
+  AppState.step = 'dinner_candidates';
+  renderStep();
+}
+
+// 晚餐候选结果页：4个卡片
+function renderDinnerCandidates(container) {
+  const candidates = AppState.dinnerCandidates;
+
+  if (!candidates || candidates.length === 0) {
+    container.innerHTML = `
+      <div class="dinner-candidates-page">
+        <div class="dinner-candidates-title">😅 这个分类暂时没有合适的菜</div>
+        <div class="dinner-candidates-sub">换个方向试试～</div>
+        <button class="back-btn" onclick="goBack()">← 返回</button>
+      </div>
+    `;
+    return;
+  }
+
+  const title = AppState.dinnerCategoryFilter
+    ? `今晚的4个${AppState.dinnerCategoryFilter}选项`
+    : '今晚的4个选项，随便挑';
+
+  container.innerHTML = `
+    <div class="dinner-candidates-page">
+      <div class="dinner-candidates-title">${title}</div>
+      <div class="dinner-candidates-sub">点进去看看，不喜欢还能换</div>
+
+      <div class="dinner-candidates-grid">
+        ${candidates.map(f => {
+          const seriesName = f.name.includes('-') ? f.name.split('-')[0] : '';
+          const dishName = f.name.includes('-') ? f.name.split('-').slice(1).join('-') : f.name;
+          return `
+          <div class="dinner-candidate-card" onclick="selectDinnerCandidate(${f.id})">
+            ${seriesName ? `<div class="dinner-candidate-series">${seriesName}</div>` : ''}
+            <div class="dinner-candidate-name">${dishName}</div>
+            <div class="dinner-candidate-price">💰 约 ${f.priceRange[0]}-${f.priceRange[1]} 元</div>
+          </div>
+        `}).join('')}
+      </div>
+
+      <div class="dinner-candidates-actions">
+        <button class="btn-reshuffle" onclick="reshuffleDinnerCandidates()">🎲 换一批</button>
+        <button class="back-btn" onclick="goBack()">← 返回</button>
+      </div>
+    </div>
+  `;
+}
+
+function selectDinnerCandidate(foodId) {
+  const food = AppState.dinnerCandidates.find(f => f.id === foodId);
+  if (!food) return;
+
+  AppState.currentFood = food;
+  AppState.cameFromDinnerCandidate = true;
+  // 设置默认值以保证详情页正常渲染
+  AppState.bodyStatus = '身体正常';
+  AppState.mood = '晚上想吃点好的';
+  AppState.wallet = '日常省心';
+  AppState.rejectedIds = [];
+  AppState.step = 5;
+  renderStep();
+}
+
+function reshuffleDinnerCandidates() {
+  AppState.dinnerCandidates = getDinnerCandidates(4, AppState.dinnerRejectedIds, AppState.dinnerCategoryFilter);
+  renderStep();
+  const grid = document.querySelector('.dinner-candidates-grid');
   if (grid) {
     grid.classList.remove('slide-in');
     void grid.offsetWidth;
@@ -1034,7 +1208,21 @@ function retryRecommend() {
     }
     const picked = filtered[Math.floor(Math.random() * filtered.length)];
     AppState.currentFood = picked || pool[Math.floor(Math.random() * pool.length)];
-  } else {
+  }
+  // 晚餐候选流程：从晚餐池中换一个
+  else if (AppState.cameFromDinnerCandidate) {
+    const pool = getDinnerPool();
+    const cat = AppState.dinnerCategoryFilter;
+    let filtered = cat ? pool.filter(f => matchDinnerCategory(f, cat)) : pool;
+    filtered = filtered.filter(f => !AppState.rejectedIds.includes(f.id));
+    if (filtered.length === 0) {
+      // 全部被排除了，放宽
+      filtered = cat ? pool.filter(f => matchDinnerCategory(f, cat)) : pool;
+    }
+    const picked = filtered[Math.floor(Math.random() * filtered.length)];
+    AppState.currentFood = picked || pool[Math.floor(Math.random() * pool.length)];
+  }
+  else {
     generateRecommendation();
   }
   renderStep5(document.getElementById('step-container'));
@@ -1081,11 +1269,15 @@ function confirmChoice() {
     AppState.cravingCandidates = [];
     AppState.cameFromCraving = false;
     AppState.cameFromLunchCandidate = false;
+    AppState.cameFromDinnerCandidate = false;
     AppState.currentFood = null;
     AppState.rejectedIds = [];
     AppState.lunchCandidates = [];
     AppState.lunchRejectedIds = [];
     AppState.lunchCategoryFilter = '';
+    AppState.dinnerCandidates = [];
+    AppState.dinnerRejectedIds = [];
+    AppState.dinnerCategoryFilter = '';
     renderStep();
   }, 1800);
 }
@@ -1101,6 +1293,14 @@ function goBack() {
     AppState.step = 'lunch_candidates';
     AppState.currentFood = null;
     AppState.cameFromLunchCandidate = false;
+    renderStep();
+    return;
+  }
+  // 晚餐候选流程：从详情页返回候选页
+  if (AppState.step === 5 && AppState.cameFromDinnerCandidate) {
+    AppState.step = 'dinner_candidates';
+    AppState.currentFood = null;
+    AppState.cameFromDinnerCandidate = false;
     renderStep();
     return;
   }
@@ -1123,6 +1323,28 @@ function goBack() {
     AppState.step = 1;
     AppState.mealType = '';
     AppState.lunchCategoryFilter = '';
+    renderStep();
+    return;
+  }
+  // 晚餐分类页 → 晚餐入口
+  if (AppState.step === 'dinner_category') {
+    AppState.step = 'dinner_entry';
+    AppState.dinnerCategoryFilter = '';
+    renderStep();
+    return;
+  }
+  // 晚餐候选页 → 晚餐入口（今晚吃这个）或分类页（有点想法）
+  if (AppState.step === 'dinner_candidates') {
+    AppState.step = AppState.dinnerCategoryFilter ? 'dinner_category' : 'dinner_entry';
+    AppState.dinnerCandidates = [];
+    renderStep();
+    return;
+  }
+  // 晚餐入口 → 首页
+  if (AppState.step === 'dinner_entry') {
+    AppState.step = 1;
+    AppState.mealType = '';
+    AppState.dinnerCategoryFilter = '';
     renderStep();
     return;
   }

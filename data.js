@@ -2559,6 +2559,41 @@ function getLunchCandidates(count, excludeIds, categoryFilter) {
   return shuffled.slice(0, count);
 }
 
+// ==================== 晚餐候选池 ====================
+function getDinnerPool() {
+  return FOOD_DATABASE.filter(f => {
+    if (f.suitableMealType) {
+      return f.suitableMealType.includes('dinner');
+    }
+    return false; // 旧数据默认不包含晚餐
+  });
+}
+
+// 晚餐分类匹配：支持 category 标签 + 抽象口味标签
+function matchDinnerCategory(food, filter) {
+  switch (filter) {
+    case '粉面': case '米饭': case '云吞饺子': case '烧烤':
+      return food.category === filter;
+    case '重口味':
+      return food.tag === '重口高油' || food.tag === '暴击放纵';
+    case '热汤':
+      return food.category === '粥' || food.tag === '胃部关怀' || food.category === '云吞饺子';
+    default:
+      return true;
+  }
+}
+
+// 获取 N 个不重复的晚餐候选
+function getDinnerCandidates(count, excludeIds, categoryFilter) {
+  let pool = getDinnerPool();
+  if (categoryFilter) {
+    pool = pool.filter(f => matchDinnerCategory(f, categoryFilter));
+  }
+  const filtered = pool.filter(f => !excludeIds.includes(f.id));
+  const shuffled = [...filtered].sort(() => Math.random() - 0.5);
+  return shuffled.slice(0, count);
+}
+
 // ==================== 早餐数据库 ====================
 // 主食库
 const BREAKFAST_MAINS = [
@@ -2617,6 +2652,6 @@ function getBreakfastCombo(excludeMainIds) {
 
 // 导出
 if (typeof module !== 'undefined') {
-  module.exports = { FOOD_DATABASE, BREAKFAST_MAINS, BREAKFAST_SIDES, BREAKFAST_DRINKS, TAUNT_POOL, CONFIRM_POOL, getTaunt, getConfirm, getRecommendations, isPriceMatch, getCravingTags, hasCravingMatch, getBreakfastCombo, getLunchPool, matchLunchCategory, getLunchCandidates };
+  module.exports = { FOOD_DATABASE, BREAKFAST_MAINS, BREAKFAST_SIDES, BREAKFAST_DRINKS, TAUNT_POOL, CONFIRM_POOL, getTaunt, getConfirm, getRecommendations, isPriceMatch, getCravingTags, hasCravingMatch, getBreakfastCombo, getLunchPool, matchLunchCategory, getLunchCandidates, getDinnerPool, matchDinnerCategory, getDinnerCandidates };
 }
 
