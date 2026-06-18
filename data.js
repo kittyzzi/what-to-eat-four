@@ -2522,6 +2522,43 @@ function hasCravingMatch(craving, mealType) {
   });
 }
 
+// ==================== 午餐候选池 ====================
+function getLunchPool() {
+  return FOOD_DATABASE.filter(f => {
+    if (f.suitableMealType) {
+      return f.suitableMealType.includes('lunch');
+    }
+    return true; // 无 suitableMealType 的旧数据默认午餐可用
+  });
+}
+
+// 午餐分类匹配：支持 category 标签 + 抽象口味标签
+function matchLunchCategory(food, filter) {
+  switch (filter) {
+    case '粉面': case '米饭': case '云吞饺子': case '粥': case '汉堡': case '烧烤':
+      return food.category === filter;
+    case '清淡':
+      return food.tag === '清淡养胃' || food.tag === '胃部关怀';
+    case '热乎':
+      return food.category === '粥' || food.category === '云吞饺子' || food.tag === '暖胃' || food.tag === '胃部关怀';
+    case '辣的':
+      return food.tag === '重口高油' || food.tag === '暴击放纵' || food.tag === '重口';
+    default:
+      return true;
+  }
+}
+
+// 获取 N 个不重复的午餐候选
+function getLunchCandidates(count, excludeIds, categoryFilter) {
+  let pool = getLunchPool();
+  if (categoryFilter) {
+    pool = pool.filter(f => matchLunchCategory(f, categoryFilter));
+  }
+  const filtered = pool.filter(f => !excludeIds.includes(f.id));
+  const shuffled = [...filtered].sort(() => Math.random() - 0.5);
+  return shuffled.slice(0, count);
+}
+
 // ==================== 早餐数据库 ====================
 // 主食库
 const BREAKFAST_MAINS = [
@@ -2580,6 +2617,6 @@ function getBreakfastCombo(excludeMainIds) {
 
 // 导出
 if (typeof module !== 'undefined') {
-  module.exports = { FOOD_DATABASE, BREAKFAST_MAINS, BREAKFAST_SIDES, BREAKFAST_DRINKS, TAUNT_POOL, CONFIRM_POOL, getTaunt, getConfirm, getRecommendations, isPriceMatch, getCravingTags, hasCravingMatch, getBreakfastCombo };
+  module.exports = { FOOD_DATABASE, BREAKFAST_MAINS, BREAKFAST_SIDES, BREAKFAST_DRINKS, TAUNT_POOL, CONFIRM_POOL, getTaunt, getConfirm, getRecommendations, isPriceMatch, getCravingTags, hasCravingMatch, getBreakfastCombo, getLunchPool, matchLunchCategory, getLunchCandidates };
 }
 
