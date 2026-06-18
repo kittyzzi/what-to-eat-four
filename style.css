@@ -1716,10 +1716,11 @@ html, body {
   align-items: flex-start;
   gap: 14px;
   padding: 14px 0;
+  border-bottom: 1px dashed #f0e4d4;
 }
 
-.breakfast-combo-item.main-item {
-  border-bottom: 1px dashed #f0e4d4;
+.breakfast-combo-item:last-of-type {
+  border-bottom: none;
 }
 
 .breakfast-combo-plus {

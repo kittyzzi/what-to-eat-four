@@ -236,32 +236,59 @@ function renderBreakfastPage(container) {
     container.innerHTML = `<div class="error-msg">获取早餐推荐失败，请重试</div>`;
     return;
   }
-  const { main, drink } = combo;
+  const { main, side, drink } = combo;
+
+  // 根据组合类型生成副标题
+  let subtitle = '';
+  if (side && drink) subtitle = '主食 + 配菜 + 饮品，丰盛早餐';
+  else if (side) subtitle = '主食 + 配菜，简简单单';
+  else subtitle = '主食 + 饮品，营养到位';
+
+  // 构建各组合项
+  let comboItemsHtml = `
+    <div class="breakfast-combo-item main-item">
+      <div class="breakfast-item-emoji">${main.emoji}</div>
+      <div class="breakfast-item-body">
+        <div class="breakfast-item-label">主食</div>
+        <div class="breakfast-item-name">${main.name}</div>
+        <div class="breakfast-item-desc">${main.desc}</div>
+        <div class="breakfast-item-price">💰 约 ${main.priceRange[0]}-${main.priceRange[1]} 元</div>
+      </div>
+    </div>`;
+
+  if (side) {
+    comboItemsHtml += `
+    <div class="breakfast-combo-plus">+</div>
+    <div class="breakfast-combo-item side-item">
+      <div class="breakfast-item-emoji">${side.emoji}</div>
+      <div class="breakfast-item-body">
+        <div class="breakfast-item-label">配菜</div>
+        <div class="breakfast-item-name">${side.name}</div>
+        <div class="breakfast-item-desc">${side.desc}</div>
+      </div>
+    </div>`;
+  }
+
+  if (drink) {
+    comboItemsHtml += `
+    <div class="breakfast-combo-plus">+</div>
+    <div class="breakfast-combo-item drink-item">
+      <div class="breakfast-item-emoji">${drink.emoji}</div>
+      <div class="breakfast-item-body">
+        <div class="breakfast-item-label">饮品</div>
+        <div class="breakfast-item-name">${drink.name}</div>
+        <div class="breakfast-item-desc">${drink.desc}</div>
+      </div>
+    </div>`;
+  }
 
   container.innerHTML = `
     <div class="breakfast-page">
       <div class="breakfast-page-title">🌅 今天早餐</div>
-      <div class="breakfast-page-subtitle">主食 + 饮品，两步搞定</div>
+      <div class="breakfast-page-subtitle">${subtitle}</div>
 
       <div class="breakfast-combo-card">
-        <div class="breakfast-combo-item main-item">
-          <div class="breakfast-item-emoji">${main.emoji}</div>
-          <div class="breakfast-item-body">
-            <div class="breakfast-item-label">主食</div>
-            <div class="breakfast-item-name">${main.name}</div>
-            <div class="breakfast-item-desc">${main.desc}</div>
-            <div class="breakfast-item-price">💰 约 ${main.priceRange[0]}-${main.priceRange[1]} 元</div>
-          </div>
-        </div>
-        <div class="breakfast-combo-plus">+</div>
-        <div class="breakfast-combo-item drink-item">
-          <div class="breakfast-item-emoji">${drink.emoji}</div>
-          <div class="breakfast-item-body">
-            <div class="breakfast-item-label">饮品</div>
-            <div class="breakfast-item-name">${drink.name}</div>
-            <div class="breakfast-item-desc">${drink.desc}</div>
-          </div>
-        </div>
+        ${comboItemsHtml}
       </div>
 
       <div class="breakfast-actions">
@@ -293,11 +320,33 @@ function confirmBreakfast() {
   const combo = AppState.breakfastCombo;
   if (!combo) return;
 
+  // 构建食物名称：主食 + 可选配菜 + 可选饮品
+  const parts = [combo.main.name];
+  if (combo.side) parts.push(combo.side.name);
+  if (combo.drink) parts.push(combo.drink.name);
+
+  // 计算总价范围
+  let minPrice = combo.main.priceRange[0];
+  let maxPrice = combo.main.priceRange[1];
+  if (combo.side && combo.side.priceRange) {
+    minPrice += combo.side.priceRange[0];
+    maxPrice += combo.side.priceRange[1];
+  }
+  if (combo.drink && combo.drink.priceRange) {
+    minPrice += combo.drink.priceRange[0];
+    maxPrice += combo.drink.priceRange[1];
+  }
+
+  // 组合描述
+  const descParts = [combo.main.desc];
+  if (combo.side) descParts.push(combo.side.desc);
+  if (combo.drink) descParts.push(combo.drink.desc);
+
   const record = {
     date: getTodayStr(),
     mealType: 'breakfast',
     meal: '早餐',
-    foodName: combo.main.name + ' + ' + combo.drink.name,
+    foodName: parts.join(' + '),
     foodId: combo.main.id,
     bodyStatus: '身体正常',
     mood: '早餐快速决策',
@@ -305,8 +354,8 @@ function confirmBreakfast() {
     tag: '正常饱腹',
     taunt: getTaunt(),
     reason: combo.main.desc,
-    avoid: combo.drink.desc,
-    priceRange: combo.main.priceRange,
+    avoid: descParts.join(' '),
+    priceRange: [minPrice, maxPrice],
     recordedAt: new Date().toISOString(),
   };
   saveRecord(record);

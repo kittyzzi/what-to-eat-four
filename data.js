@@ -2523,36 +2523,32 @@ function hasCravingMatch(craving, mealType) {
 }
 
 // ==================== 早餐数据库 ====================
-// 主食列表
+// 主食库
 const BREAKFAST_MAINS = [
   { id: 'bm_01', name: '水晶饺', emoji: '🥟', desc: '皮薄馅嫩，一口一个不费力。', priceRange: [5, 10] },
   { id: 'bm_02', name: '煎饺', emoji: '🥟', desc: '底部煎得焦脆，里面还是软的，两种口感一勺端。', priceRange: [5, 10] },
-  { id: 'bm_03', name: '奥尔良肉包', emoji: '🥩', desc: '香辣微甜，肉汁饱满，早上来一个瞬间醒神。', priceRange: [3, 7] },
-  { id: 'bm_04', name: '紫薯包', emoji: '🫐', desc: '甜而不腻，紫薯馅扎实，早上的第一口甜。', priceRange: [3, 6] },
-  { id: 'bm_05', name: '热干面', emoji: '🍜', desc: '芝麻酱拌到底，武汉早餐的灵魂担当。', priceRange: [6, 12] },
-  { id: 'bm_06', name: '肠粉', emoji: '🌯', desc: '嫩滑Q弹，浇上酱汁，吃完神清气爽。', priceRange: [5, 10] },
-  { id: 'bm_07', name: '鸡蛋灌饼', emoji: '🫓', desc: '饼皮酥脆，鸡蛋饱腹，加根火腿更完美。', priceRange: [5, 10] },
-  { id: 'bm_08', name: '猪肉包', emoji: '🥩', desc: '汤汁足、肉馅扎实，手里捧一个热腾腾的。', priceRange: [2, 5] },
-  { id: 'bm_09', name: '小笼包', emoji: '🥟', desc: '轻轻咬破，汤汁顺着嘴角——早上的小确幸。', priceRange: [8, 15] },
-  { id: 'bm_10', name: '葱油拌面', emoji: '🍜', desc: '简单直接，葱香扑鼻，一碗下肚神清气爽。', priceRange: [6, 10] },
-  { id: 'bm_11', name: '豆腐脑', emoji: '🥣', desc: '嫩滑豆腐浇上咸鲜卤汁，暖胃又舒适。', priceRange: [4, 8] },
-  { id: 'bm_12', name: '油条', emoji: '🥖', desc: '外酥里嫩，掰开蘸豆浆，经典不解释。', priceRange: [2, 5] },
+  { id: 'bm_03', name: '莲蓉包', emoji: '🫘', desc: '白胖松软，莲蓉细腻微甜，早上一口甜到心里。', priceRange: [3, 6] },
+  { id: 'bm_04', name: '南瓜馒头', emoji: '🎃', desc: '南瓜的清香钻进馒头里，淡淡的甜像早晨阳光。', priceRange: [3, 6] },
+  { id: 'bm_05', name: '红糖馒头', emoji: '🍬', desc: '红糖的甜很克制，刚好给早晨多一点温度。', priceRange: [3, 6] },
+  { id: 'bm_06', name: '紫薯包', emoji: '🫐', desc: '甜而不腻，紫薯馅扎实，早上的第一口甜。', priceRange: [3, 6] },
+  { id: 'bm_07', name: '奥尔良肉包', emoji: '🥩', desc: '香辣微甜，肉汁饱满，早上来一个瞬间醒神。', priceRange: [3, 7] },
 ];
 
-// 饮品列表
+// 配菜库
+const BREAKFAST_SIDES = [
+  { id: 'bs_01', name: '茶叶蛋', emoji: '🥚', desc: '一颗茶叶蛋，蛋白质到位，朴实但有滋味。', priceRange: [2, 3] },
+];
+
+// 饮品库
 const BREAKFAST_DRINKS = [
-  { id: 'bd_01', name: '豆浆', emoji: '🥛', desc: '热的，微微香甜，早上一杯最稳妥。' },
-  { id: 'bd_02', name: '茶叶蛋', emoji: '🥚', desc: '一颗茶叶蛋，蛋白质到位，还带点卤香。' },
-  { id: 'bd_03', name: '牛奶', emoji: '🍼', desc: '一盒纯牛奶，简单粗暴，补钙补蛋白。' },
-  { id: 'bd_04', name: '热豆浆', emoji: '🫖', desc: '浓一点的热豆浆，暖胃暖手，早上专用。' },
-  { id: 'bd_05', name: '白开水', emoji: '💧', desc: '清醒第一步先喝水，什么都不如白开水简单。' },
-  { id: 'bd_06', name: '蜂蜜柚子茶', emoji: '🍋', desc: '酸甜微苦，清口又提神，上班前喝一杯心情好。' },
+  { id: 'bd_01', name: '豆浆', emoji: '🥛', desc: '一杯热豆浆，暖手也暖胃，早晨的第一口温柔。', priceRange: [3, 5] },
 ];
 
 /**
- * 随机获取一组早餐搭配（主食 + 饮品）
+ * 随机获取一组早餐搭配
+ * 三种组合模式随机：主食+饮品 | 主食+配菜 | 主食+配菜+饮品
  * @param {string[]} excludeMainIds  上一次排除的主食 id
- * @returns {{ main: object, drink: object }}
+ * @returns {{ main: object, side: object|null, drink: object|null }}
  */
 function getBreakfastCombo(excludeMainIds) {
   excludeMainIds = excludeMainIds || [];
@@ -2560,12 +2556,30 @@ function getBreakfastCombo(excludeMainIds) {
   let mainPool = BREAKFAST_MAINS.filter(m => !excludeMainIds.includes(m.id));
   if (mainPool.length === 0) mainPool = BREAKFAST_MAINS;
   const main = mainPool[Math.floor(Math.random() * mainPool.length)];
-  const drink = BREAKFAST_DRINKS[Math.floor(Math.random() * BREAKFAST_DRINKS.length)];
-  return { main, drink };
+
+  // 随机选择组合模式：0=主食+饮品, 1=主食+配菜, 2=主食+配菜+饮品
+  const pattern = Math.floor(Math.random() * 3);
+
+  let side = null;
+  let drink = null;
+
+  if (pattern === 0) {
+    // 主食 + 饮品
+    drink = BREAKFAST_DRINKS[Math.floor(Math.random() * BREAKFAST_DRINKS.length)];
+  } else if (pattern === 1) {
+    // 主食 + 配菜
+    side = BREAKFAST_SIDES[Math.floor(Math.random() * BREAKFAST_SIDES.length)];
+  } else {
+    // 主食 + 配菜 + 饮品
+    side = BREAKFAST_SIDES[Math.floor(Math.random() * BREAKFAST_SIDES.length)];
+    drink = BREAKFAST_DRINKS[Math.floor(Math.random() * BREAKFAST_DRINKS.length)];
+  }
+
+  return { main, side, drink };
 }
 
 // 导出
 if (typeof module !== 'undefined') {
-  module.exports = { FOOD_DATABASE, BREAKFAST_MAINS, BREAKFAST_DRINKS, TAUNT_POOL, CONFIRM_POOL, getTaunt, getConfirm, getRecommendations, isPriceMatch, getCravingTags, hasCravingMatch, getBreakfastCombo };
+  module.exports = { FOOD_DATABASE, BREAKFAST_MAINS, BREAKFAST_SIDES, BREAKFAST_DRINKS, TAUNT_POOL, CONFIRM_POOL, getTaunt, getConfirm, getRecommendations, isPriceMatch, getCravingTags, hasCravingMatch, getBreakfastCombo };
 }
 
