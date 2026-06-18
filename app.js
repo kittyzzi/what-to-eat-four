@@ -1600,53 +1600,40 @@ function renderDiagnosis() {
   // 统计
   const foodCount = {};
   const categoryCount = {};
-  const uniqueFoods = new Set();
-  const mealCount = { breakfast: 0, lunch: 0, dinner: 0 };
 
   monthRecords.forEach(r => {
     foodCount[r.foodName] = (foodCount[r.foodName] || 0) + 1;
-    uniqueFoods.add(r.foodName);
 
-    // 从数据库取分类
     const food = FOOD_DATABASE.find(f => f.id === r.foodId);
     const cat = (food && food.category) ? food.category : '其他';
     categoryCount[cat] = (categoryCount[cat] || 0) + 1;
-
-    const mt = r.mealType || 'lunch';
-    if (mealCount.hasOwnProperty(mt)) mealCount[mt]++;
   });
 
   const top3Foods = Object.entries(foodCount).sort((a,b) => b[1]-a[1]).slice(0,3);
   const categoryList = Object.entries(categoryCount).sort((a,b) => b[1]-a[1]);
-  const uniqueCount = uniqueFoods.size;
 
   // 顶部最爱食物
   const topFood = top3Foods[0];
   const topFoodName = topFood ? topFood[0] : '';
   const topFoodCount = topFood ? topFood[1] : 0;
 
-  // 饮食人格 + AI吐槽
+  // 饮食人格 + AI一句话
   const personality = getFoodPersonality(categoryList, total);
-  const aiRoast = generateAIRoast(topFoodName, topFoodCount, categoryList, uniqueCount, mealCount, total);
+  const aiLine = generateAILine(topFoodName, topFoodCount, categoryList, total);
 
-  // 分类 emoji 映射
-  const catEmoji = { '粉面':'🍜','米饭':'🍚','云吞饺子':'🥟','粥':'🥣','汉堡':'🍔','烧烤':'🔥' };
-  const maxCatCount = categoryList.length > 0 ? categoryList[0][1] : 1;
-
-  // 冠军 quip
+  // 冠军 quip — 短句吐槽
   let champQuip;
   if (topFoodCount >= 5) {
-    champQuip = `说好的"今天换换口味"呢？「${topFoodName}」已经赢了 ${topFoodCount} 次。`;
+    champQuip = `你总说换换口味。<br>结果还是回来了。<br>这已经不是喜欢了。<br>这是熟悉感。`;
   } else if (topFoodCount >= 3) {
-    champQuip = `你嘴上说随便。结果每次选的还是它——「${topFoodName}」。`;
+    champQuip = `你说随便。<br>「${topFoodName}」可没信。`;
   } else if (topFoodCount >= 2) {
-    champQuip = `「${topFoodName}」微弱领先。你的胃还没下定决心。`;
+    champQuip = `这月见你最多的，<br>不是同事。<br>是「${topFoodName}」。`;
   } else {
-    champQuip = '你的胃在备忘录里悄悄写了：这周能不能有点新面孔？';
+    champQuip = `你的胃在备忘录里写了：<br>这周能不能有点新面孔？`;
   }
 
   document.getElementById('diagnosis-body').innerHTML = `
-    <!-- ===== 第一屏：故事层 ===== -->
     <div class="monthly-hero">
       <div class="monthly-hero-badge">${now.getMonth()+1}月总结</div>
       <div class="monthly-hero-stat">
@@ -1654,7 +1641,7 @@ function renderDiagnosis() {
         <span class="monthly-hero-unit">顿</span>
       </div>
       <div class="monthly-hero-line">每一顿都不是浑水摸鱼。</div>
-      <div class="monthly-hero-line-sub">认真吃饭的人，运气不会太差。</div>
+      <div class="monthly-hero-line-sub">认认真真吃饭的人，运气不会太差。</div>
     </div>
 
     <div class="monthly-love-card">
@@ -1671,7 +1658,7 @@ function renderDiagnosis() {
         ${top3Foods.map(([name, count], i) => `
           <div class="monthly-top3-item ${i === 0 ? 'gold' : i === 1 ? 'silver' : 'bronze'}">
             <div class="monthly-top3-rank">${['🥇','🥈','🥉'][i]}</div>
-            <div class="monthly-top3-name" title="${name}">${name.length > 4 ? name.slice(0,4)+'…' : name}</div>
+            <div class="monthly-top3-name" title="${name}">${name.length > 6 ? name.slice(0,5)+'…' : name}</div>
             <div class="monthly-top3-count">${count}次</div>
           </div>
         `).join('')}
@@ -1679,10 +1666,6 @@ function renderDiagnosis() {
     </div>
     ` : ''}
 
-    <!-- 故事层分隔 -->
-    <div class="monthly-sep"><span>✦</span></div>
-
-    <!-- 饮食人格 -->
     <div class="monthly-persona-card">
       <div class="monthly-persona-emoji">${personality.emoji}</div>
       <div class="monthly-persona-label">饮食人格</div>
@@ -1690,51 +1673,9 @@ function renderDiagnosis() {
       <div class="monthly-persona-explain">${personality.explain}</div>
     </div>
 
-    <!-- AI 吐槽 -->
-    <div class="monthly-roast">
-      <div class="monthly-roast-label">🤖 AI 吐槽</div>
-      <div class="monthly-roast-text">${aiRoast}</div>
-    </div>
-
-    <!-- 数据层分隔 -->
-    <div class="monthly-sep"><span>✦</span></div>
-
-    <!-- ===== 第二屏：数据层 ===== -->
-    <div class="monthly-section-title">👅 口味画像</div>
-    <div class="monthly-taste-card">
-      ${categoryList.map(([cat, count]) => {
-        const pct = Math.round(count / total * 100);
-        const barW = Math.round(count / maxCatCount * 100);
-        return `
-        <div class="monthly-taste-row">
-          <div class="monthly-taste-emoji">${catEmoji[cat] || '🍽️'}</div>
-          <div class="monthly-taste-name">${cat}</div>
-          <div class="monthly-taste-bar-wrap">
-            <div class="monthly-taste-bar" style="width:${barW}%"></div>
-          </div>
-          <div class="monthly-taste-pct">${pct}%</div>
-        </div>
-      `}).join('')}
-      ${categoryList.length === 0 ? '<div class="monthly-taste-empty">还没有数据～</div>' : ''}
-    </div>
-
-    <div class="monthly-stats-row">
-      <div class="monthly-stat-card explore">
-        <div class="monthly-stat-emoji">🔍</div>
-        <div class="monthly-stat-num">${uniqueCount}</div>
-        <div class="monthly-stat-label">种不同食物</div>
-        <div class="monthly-stat-hint">${uniqueCount >= 10 ? '你是美食探险家！' : uniqueCount >= 5 ? '口味稳定型选手' : '忠实回头客'}</div>
-      </div>
-      <div class="monthly-stat-card">
-        <div class="monthly-stat-emoji">⏰</div>
-        <div class="monthly-meal-mini">
-          <div class="mini-meal"><span>🍳</span><strong>${mealCount.breakfast}</strong><span>早</span></div>
-          <div class="mini-meal"><span>🍱</span><strong>${mealCount.lunch}</strong><span>午</span></div>
-          <div class="mini-meal"><span>🍲</span><strong>${mealCount.dinner}</strong><span>晚</span></div>
-        </div>
-        <div class="monthly-stat-label">饮食规律</div>
-        <div class="monthly-stat-hint">${mealCount.breakfast >= mealCount.lunch ? '早餐打卡达人！' : mealCount.dinner >= mealCount.lunch ? '晚餐是每日仪式感' : '午餐最稳定'}</div>
-      </div>
+    <div class="monthly-line-card">
+      <div class="monthly-line-avatar">🤖</div>
+      <div class="monthly-line-text">${aiLine}</div>
     </div>
 
     <div class="monthly-outro">下个月也要好好吃饭 🤍</div>
@@ -1743,7 +1684,6 @@ function renderDiagnosis() {
 
 /**
  * 饮食人格 — 根据分类占比判断
- * @returns {{ title, emoji, explain }}
  */
 function getFoodPersonality(categoryList, total) {
   if (categoryList.length === 0) {
@@ -1754,12 +1694,12 @@ function getFoodPersonality(categoryList, total) {
   const topCatPct = Math.round(topCat[1] / total * 100);
 
   const labels = {
-    '粉面': { title: '粉面信徒', emoji: '🍜', explain: '面食才是灵魂，其他都是将就。' },
-    '米饭': { title: '米饭守护者', emoji: '🍚', explain: '粒粒皆执着，碗碗见真心。' },
-    '云吞饺子': { title: '云吞饺子星人', emoji: '🥟', explain: '包起来的，才算一顿。' },
-    '粥': { title: '养生粥人', emoji: '🥣', explain: '你的胃过得很体面。' },
-    '汉堡': { title: '汉堡自由人', emoji: '🍔', explain: '碳水叠碳水，快乐翻倍。' },
-    '烧烤': { title: '烧烤猎人', emoji: '🔥', explain: '烟火气就是生活气。' },
+    '粉面': { title: '粉面信徒', emoji: '🍜', explain: '汤汤水水下肚。<br>这一天才算开始。' },
+    '米饭': { title: '米饭守护者', emoji: '🍚', explain: '世界变化再快。<br>饭还是要吃的。' },
+    '云吞饺子': { title: '云吞饺子星人', emoji: '🥟', explain: '包起来的。<br>才算一顿。' },
+    '粥': { title: '养生粥人', emoji: '🥣', explain: '你的胃。<br>过得比大多数人都体面。' },
+    '汉堡': { title: '汉堡自由人', emoji: '🍔', explain: '碳水叠碳水。<br>快乐翻倍。' },
+    '烧烤': { title: '烧烤猎人', emoji: '🔥', explain: '烟火气。<br>就是生活气。' },
   };
 
   if (topCatPct >= 45 && labels[topCat[0]]) {
@@ -1767,43 +1707,39 @@ function getFoodPersonality(categoryList, total) {
   }
 
   if (categoryList.length >= 4) {
-    return { title: '杂食动物', emoji: '🦊', explain: '什么都吃，什么都不拒绝。' };
+    return { title: '杂食动物', emoji: '🦊', explain: '什么都吃。<br>什么都不拒绝。' };
   }
 
-  return { title: '随缘派', emoji: '🎲', explain: '今天吃啥看心情，明天吃啥再说。' };
+  return { title: '随缘派', emoji: '🎲', explain: '今天吃啥看心情。<br>明天吃啥再说。' };
 }
 
 /**
- * 生成 AI 吐槽 — 朋友式一句话吐槽
+ * 生成 AI 一句话 — 不超过 20 字，两段式
  */
-function generateAIRoast(topFood, topCount, categoryList, uniqueCount, mealCount, total) {
-  // 1. 冠军明显
+function generateAILine(topFood, topCount, categoryList, total) {
+  // 冠军明显
   if (topFood && topCount >= 3) {
-    if (topCount >= 5) {
-      return `嘴上说随便。<br>结果「${topFood}」赢了 ${topCount} 次。`;
-    }
-    return `嘴上说随便。<br>结果「${topFood}」还是赢了。`;
+    return `你嘴上说随便。<br>身体可没随便。`;
   }
 
-  // 2. 类别倾向明显
+  // 类别倾向
   const topCat = categoryList[0];
   if (topCat && Math.round(topCat[1] / total * 100) >= 45) {
-    return `我研究了半天。<br>发现你是真的${topCat[0]}脑袋。`;
+    return `我研究了半天。<br>发现你是真随缘。`;
   }
 
-  // 3. 多样化
-  if (uniqueCount >= 8 && categoryList.length >= 3) {
-    const cats = categoryList.slice(0, 3).map(([c]) => c);
-    return `今天${cats[0]}。<br>明天${cats[1]}。<br>后天又不知道跑哪去了。`;
+  // 多样化
+  if (categoryList.length >= 4) {
+    return `今天吃啥不知道。<br>但每个月都能吃饱。`;
   }
 
-  // 4. 记录少
+  // 记录少
   if (total <= 5) {
-    return `记录了 ${total} 顿。<br>已经超过很多只会纠结不记录的人了。`;
+    return `记录不多。<br>但每一笔都是认真的。`;
   }
 
-  // 5. 默认
-  return `你的胃不太爱说话。<br>但每次选吃的都很诚实。`;
+  // 默认
+  return `你的胃不太爱说话。<br>但选吃的很诚实。`;
 }
 
 // ==================== 导航 ====================
