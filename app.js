@@ -15,7 +15,7 @@ const AppState = {
   rejectedIds: [],    // 本次已拒绝的推荐ID
   view: 'home',       // home | calendar | diagnosis
   // 早餐专用
-  breakfastCombo: null,       // { main, drink }
+  breakfastCombo: null,       // { main, side?, drink? }  三种随机组合
   breakfastRejectedMainIds: [], // 早餐已拒绝的主食 id
 };
 
@@ -238,57 +238,52 @@ function renderBreakfastPage(container) {
   }
   const { main, side, drink } = combo;
 
-  // 根据组合类型生成副标题
-  let subtitle = '';
-  if (side && drink) subtitle = '主食 + 配菜 + 饮品，丰盛早餐';
-  else if (side) subtitle = '主食 + 配菜，简简单单';
-  else subtitle = '主食 + 饮品，营养到位';
+  // 计算总价
+  let minPrice = main.priceRange[0];
+  let maxPrice = main.priceRange[1];
+  if (side && side.priceRange) { minPrice += side.priceRange[0]; maxPrice += side.priceRange[1]; }
+  if (drink && drink.priceRange) { minPrice += drink.priceRange[0]; maxPrice += drink.priceRange[1]; }
 
-  // 构建各组合项
-  let comboItemsHtml = `
-    <div class="breakfast-combo-item main-item">
-      <div class="breakfast-item-emoji">${main.emoji}</div>
-      <div class="breakfast-item-body">
-        <div class="breakfast-item-label">主食</div>
-        <div class="breakfast-item-name">${main.name}</div>
-        <div class="breakfast-item-desc">${main.desc}</div>
-        <div class="breakfast-item-price">💰 约 ${main.priceRange[0]}-${main.priceRange[1]} 元</div>
+  // 构建套餐内容（不再使用"主食/配菜/饮品"标签，统一为套餐项）
+  let itemsHtml = `
+    <div class="breakfast-set-item">
+      <span class="breakfast-set-emoji">${main.emoji}</span>
+      <div class="breakfast-set-body">
+        <div class="breakfast-set-name">${main.name}</div>
+        <div class="breakfast-set-desc">${main.desc}</div>
       </div>
     </div>`;
 
   if (side) {
-    comboItemsHtml += `
-    <div class="breakfast-combo-plus">+</div>
-    <div class="breakfast-combo-item side-item">
-      <div class="breakfast-item-emoji">${side.emoji}</div>
-      <div class="breakfast-item-body">
-        <div class="breakfast-item-label">配菜</div>
-        <div class="breakfast-item-name">${side.name}</div>
-        <div class="breakfast-item-desc">${side.desc}</div>
+    itemsHtml += `
+    <div class="breakfast-set-item">
+      <span class="breakfast-set-emoji">${side.emoji}</span>
+      <div class="breakfast-set-body">
+        <div class="breakfast-set-name">${side.name}</div>
+        <div class="breakfast-set-desc">${side.desc}</div>
       </div>
     </div>`;
   }
 
   if (drink) {
-    comboItemsHtml += `
-    <div class="breakfast-combo-plus">+</div>
-    <div class="breakfast-combo-item drink-item">
-      <div class="breakfast-item-emoji">${drink.emoji}</div>
-      <div class="breakfast-item-body">
-        <div class="breakfast-item-label">饮品</div>
-        <div class="breakfast-item-name">${drink.name}</div>
-        <div class="breakfast-item-desc">${drink.desc}</div>
+    itemsHtml += `
+    <div class="breakfast-set-item">
+      <span class="breakfast-set-emoji">${drink.emoji}</span>
+      <div class="breakfast-set-body">
+        <div class="breakfast-set-name">${drink.name}</div>
+        <div class="breakfast-set-desc">${drink.desc}</div>
       </div>
     </div>`;
   }
 
   container.innerHTML = `
     <div class="breakfast-page">
-      <div class="breakfast-page-title">🌅 今天早餐</div>
-      <div class="breakfast-page-subtitle">${subtitle}</div>
+      <div class="breakfast-page-title">☀️ 今天早餐吃这个</div>
+      <div class="breakfast-page-subtitle">别纠结了，帮你安排好了。</div>
 
-      <div class="breakfast-combo-card">
-        ${comboItemsHtml}
+      <div class="breakfast-set-card">
+        ${itemsHtml}
+        <div class="breakfast-set-price">💰 约 ${minPrice}-${maxPrice} 元</div>
       </div>
 
       <div class="breakfast-actions">
@@ -308,7 +303,7 @@ function retryBreakfast() {
   const container = document.getElementById('step-container');
   renderBreakfastPage(container);
   // 滑入动画
-  const card = container.querySelector('.breakfast-combo-card');
+  const card = container.querySelector('.breakfast-set-card');
   if (card) {
     card.classList.remove('slide-in');
     void card.offsetWidth;
