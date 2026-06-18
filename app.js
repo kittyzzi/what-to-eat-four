@@ -1597,58 +1597,58 @@ function renderDiagnosis() {
     return;
   }
 
-  // 统计（逻辑保持不变）
+  // 统计
   const foodCount = {};
-  const tagCount = {};
-  let heavyCount = 0;
-  let stomachBadCount = 0;
-
-  // 分餐次统计
+  const categoryCount = {};
+  const uniqueFoods = new Set();
   const mealCount = { breakfast: 0, lunch: 0, dinner: 0 };
 
   monthRecords.forEach(r => {
     foodCount[r.foodName] = (foodCount[r.foodName] || 0) + 1;
-    tagCount[r.tag] = (tagCount[r.tag] || 0) + 1;
-    if (r.tag === '重口高油' || r.tag === '暴击放纵') heavyCount++;
-    if (r.tag === '胃部关怀') stomachBadCount++;
-    const mt = r.mealType || 'lunch'; // 兼容旧记录
+    uniqueFoods.add(r.foodName);
+
+    // 从数据库取分类
+    const food = FOOD_DATABASE.find(f => f.id === r.foodId);
+    const cat = (food && food.category) ? food.category : '其他';
+    categoryCount[cat] = (categoryCount[cat] || 0) + 1;
+
+    const mt = r.mealType || 'lunch';
     if (mealCount.hasOwnProperty(mt)) mealCount[mt]++;
   });
 
   const top3Foods = Object.entries(foodCount).sort((a,b) => b[1]-a[1]).slice(0,3);
-  const tagDist = Object.entries(tagCount).sort((a,b) => b[1]-a[1]);
-
-  // AI诊断文案
-  const aiDiagnosis = generateAIDiagnosis(total, heavyCount, stomachBadCount, top3Foods, tagDist);
-  const suggestion = generateSuggestion(heavyCount, stomachBadCount, total, tagDist);
+  const categoryList = Object.entries(categoryCount).sort((a,b) => b[1]-a[1]);
+  const uniqueCount = uniqueFoods.size;
 
   // 顶部最爱食物
   const topFood = top3Foods[0];
   const topFoodName = topFood ? topFood[0] : '';
   const topFoodCount = topFood ? topFood[1] : 0;
 
+  // AI观察
+  const aiObservation = generateAIObservation(topFoodName, topFoodCount, categoryList, uniqueCount, mealCount, total);
+
+  // 分类 emoji 映射
+  const catEmoji = { '粉面':'🍜','米饭':'🍚','云吞饺子':'🥟','粥':'🥣','汉堡':'🍔','烧烤':'🔥' };
+  const maxCatCount = categoryList.length > 0 ? categoryList[0][1] : 1;
+
   document.getElementById('diagnosis-body').innerHTML = `
     <div class="monthly-hero">
       <div class="monthly-hero-badge">${now.getMonth()+1}月总结</div>
       <div class="monthly-hero-stat">
         <span class="monthly-hero-num">${total}</span>
-        <span class="monthly-hero-unit">次</span>
+        <span class="monthly-hero-unit">顿</span>
       </div>
-      <div class="monthly-hero-line">本月你认真记录了每一餐。</div>
-      <div class="monthly-hero-line-sub">每一顿都不是浑水摸鱼。</div>
-      <div class="monthly-meal-breakdown">
-        <span class="meal-stat">🍳 早餐 <strong>${mealCount.breakfast}</strong> 次</span>
-        <span class="meal-stat">🍱 午餐 <strong>${mealCount.lunch}</strong> 次</span>
-        <span class="meal-stat">🍲 晚餐 <strong>${mealCount.dinner}</strong> 次</span>
-      </div>
+      <div class="monthly-hero-line">每一顿都不是浑水摸鱼。</div>
+      <div class="monthly-hero-line-sub">认真吃饭的人，运气不会太差。</div>
     </div>
 
     <div class="monthly-love-card">
-      <div class="monthly-love-emoji">❤️</div>
-      <div class="monthly-love-title">你的心头好</div>
+      <div class="monthly-love-emoji">🏆</div>
+      <div class="monthly-love-title">本月冠军</div>
       <div class="monthly-love-food">${topFoodName || '待发掘'}</div>
-      <div class="monthly-love-meta">出现了 <strong>${topFoodCount}</strong> 次</div>
-      <div class="monthly-love-quip">你说不知道吃什么，结果「${topFoodName}」独自扛下了 ${topFoodCount} 顿。</div>
+      <div class="monthly-love-meta">吃了 <strong>${topFoodCount}</strong> 次</div>
+      ${topFoodCount >= 3 ? `<div class="monthly-love-quip">你不是选择困难，你只是反复爱上同一种味道——「${topFoodName}」本月独自扛下了 ${topFoodCount} 顿。</div>` : `<div class="monthly-love-quip">你的胃在备忘录里悄悄写了：这周能不能有点新面孔？</div>`}
     </div>
 
     ${top3Foods.length > 1 ? `
@@ -1657,7 +1657,7 @@ function renderDiagnosis() {
         ${top3Foods.map(([name, count], i) => `
           <div class="monthly-top3-item ${i === 0 ? 'gold' : i === 1 ? 'silver' : 'bronze'}">
             <div class="monthly-top3-rank">${['🥇','🥈','🥉'][i]}</div>
-            <div class="monthly-top3-name" title="${name}">${name.length > 3 ? name.slice(0,3)+'…' : name}</div>
+            <div class="monthly-top3-name" title="${name}">${name.length > 4 ? name.slice(0,4)+'…' : name}</div>
             <div class="monthly-top3-count">${count}次</div>
           </div>
         `).join('')}
@@ -1665,32 +1665,48 @@ function renderDiagnosis() {
     </div>
     ` : ''}
 
+    <div class="monthly-section-title">👅 口味画像</div>
+    <div class="monthly-taste-card">
+      ${categoryList.map(([cat, count]) => {
+        const pct = Math.round(count / total * 100);
+        const barW = Math.round(count / maxCatCount * 100);
+        return `
+        <div class="monthly-taste-row">
+          <div class="monthly-taste-emoji">${catEmoji[cat] || '🍽️'}</div>
+          <div class="monthly-taste-name">${cat}</div>
+          <div class="monthly-taste-bar-wrap">
+            <div class="monthly-taste-bar" style="width:${barW}%"></div>
+          </div>
+          <div class="monthly-taste-pct">${pct}%</div>
+        </div>
+      `}).join('')}
+      ${categoryList.length === 0 ? '<div class="monthly-taste-empty">还没有数据～</div>' : ''}
+    </div>
+
+    <div class="monthly-stats-row">
+      <div class="monthly-stat-card explore">
+        <div class="monthly-stat-emoji">🔍</div>
+        <div class="monthly-stat-num">${uniqueCount}</div>
+        <div class="monthly-stat-label">种不同食物</div>
+        <div class="monthly-stat-hint">${uniqueCount >= 10 ? '你是美食探险家！' : uniqueCount >= 5 ? '口味稳定型选手' : '忠实回头客'}</div>
+      </div>
+      <div class="monthly-stat-card">
+        <div class="monthly-stat-emoji">⏰</div>
+        <div class="monthly-meal-mini">
+          <div class="mini-meal"><span>🍳</span><strong>${mealCount.breakfast}</strong><span>早</span></div>
+          <div class="mini-meal"><span>🍱</span><strong>${mealCount.lunch}</strong><span>午</span></div>
+          <div class="mini-meal"><span>🍲</span><strong>${mealCount.dinner}</strong><span>晚</span></div>
+        </div>
+        <div class="monthly-stat-label">饮食规律</div>
+        <div class="monthly-stat-hint">${mealCount.breakfast >= mealCount.lunch ? '早餐打卡达人！' : mealCount.dinner >= mealCount.lunch ? '晚餐是每日仪式感' : '午餐最稳定'}</div>
+      </div>
+    </div>
+
+    <div class="monthly-section-title">🤖 AI 观察</div>
     <div class="monthly-chat-bubble">
       <div class="monthly-chat-avatar">🤖</div>
       <div class="monthly-chat-body">
-        <div class="monthly-chat-label">AI 诊断</div>
-        <div class="monthly-chat-text">${aiDiagnosis}</div>
-      </div>
-    </div>
-
-    ${heavyCount > 0 || stomachBadCount > 0 ? `
-    <div class="monthly-chat-bubble care">
-      <div class="monthly-chat-avatar">🫀</div>
-      <div class="monthly-chat-body">
-        <div class="monthly-chat-label">健康提醒</div>
-        <div class="monthly-chat-text">
-          ${heavyCount > 0 ? `本月重口次数偏多（${heavyCount}次），下个月安排两顿清淡的，给胃一点尊重。<br>` : ''}
-          ${stomachBadCount > 0 ? `有 ${stomachBadCount} 天胃不太舒服，胃不会说话但会记账，别让它秋后算账。<br>` : ''}
-        </div>
-      </div>
-    </div>
-    ` : ''}
-
-    <div class="monthly-chat-bubble tip">
-      <div class="monthly-chat-avatar">💡</div>
-      <div class="monthly-chat-body">
-        <div class="monthly-chat-label">下个月小建议</div>
-        <div class="monthly-chat-text">${suggestion}</div>
+        <div class="monthly-chat-text">${aiObservation}</div>
       </div>
     </div>
 
@@ -1698,74 +1714,71 @@ function renderDiagnosis() {
   `;
 }
 
-function generateAIDiagnosis(total, heavy, stomachBad, top3, tagDist) {
-  if (total === 0) return '你本月没有记录，这很神秘，我无法诊断你。';
-
-  const topTag = tagDist[0] ? tagDist[0][0] : '';
-  const topFood = top3[0] ? top3[0][0] : '';
-  const topCount = top3[0] ? top3[0][1] : 0;
-
-  // friend-chat style lines
+/**
+ * 生成 AI 观察 — 基于真实饮食数据的朋友式吐槽
+ * @param {string} topFood - 吃得最多的食物名
+ * @param {number} topCount - 冠军次数
+ * @param {[string,number][]} categoryList - 分类占比 [[cat, count], ...]
+ * @param {number} uniqueCount - 本月吃过多少种不同食物
+ * @param {{breakfast,lunch,dinner}} mealCount - 各餐次次数
+ * @param {number} total - 总记录数
+ */
+function generateAIObservation(topFood, topCount, categoryList, uniqueCount, mealCount, total) {
   const lines = [];
 
-  if (topFood && topCount >= 3) {
-    lines.push(`你不是选择困难，你只是反复爱上同一种味道——「${topFood}」出现了 ${topCount} 次，它已经是你的午间老朋友了。`);
+  // 1. 冠军吐槽
+  if (topFood && topCount >= 4) {
+    lines.push(`「${topFood}」本月出场 ${topCount} 次，你的胃闭着眼都知道它要来。说好的"今天换换口味"呢？`);
+  } else if (topFood && topCount >= 2) {
+    lines.push(`「${topFood}」吃了 ${topCount} 次，稳坐本月 C 位。它应该给你发张 VIP 卡。`);
   } else if (topFood) {
-    lines.push(`你的口味还算多变，但「${topFood}」以 ${topCount} 次的微弱优势夺冠。`);
+    lines.push(`你本月吃得非常分散，连我都找不到你的规律。你是故意的还是选择困难真的太严重？`);
   }
 
-  if (topTag === '清淡养胃') {
-    lines.push('你是同事眼中的养生达人，你的胃过得比大多数人都体面。');
-  } else if (topTag === '暴击放纵') {
-    lines.push('你的饮食哲学是"及时行乐"，你的胃正在默默练习抗击打能力。');
-  } else if (topTag === '重口高油') {
-    lines.push('你的口味像一部热血的少年漫画，辣椒和油脂是主角。偶尔也该给清淡一个出场机会。');
-  } else if (topTag === '正常饱腹') {
-    lines.push('你的饮食节奏稳稳当当，像个成熟的大人。偶尔也可以允许自己放纵一下。');
-  } else if (topTag === '胃部关怀') {
-    lines.push('你这个月在饮食上对自己很温柔，胃感受到了你的善意。');
+  // 2. 口味画像吐槽
+  if (categoryList.length > 0) {
+    const topCat = categoryList[0];
+    const topCatPct = Math.round(topCat[1] / total * 100);
+    if (topCatPct >= 50) {
+      lines.push(`你的口味其实是「${topCat[0]}」的重度用户——占了 ${topCatPct}%，建议在简历"特长"栏加上这一条。`);
+    } else if (categoryList.length >= 4) {
+      lines.push(`口味跨度挺大：${categoryList.slice(0,3).map(([c]) => c).join('、')} 都有涉猎，你是那种"今天想吃啥就吃啥"的自由派。`);
+    }
   }
 
+  // 3. 探索指数吐槽
+  if (uniqueCount >= 15) {
+    lines.push(`本月你吃了 ${uniqueCount} 种不同的食物——这个探索精神，你的胃是开盲盒的吗？`);
+  } else if (uniqueCount >= 8) {
+    lines.push(`${uniqueCount} 种不同食物，不算少。你的胃至少不会喊"怎么又是你"。`);
+  } else if (uniqueCount >= 3) {
+    lines.push(`只吃了 ${uniqueCount} 种不同食物，你的饮食 comfort zone 大概是一个很小的圈。但不换也有不换的安心。`);
+  }
+
+  // 4. 饮食规律吐槽
+  const maxMeal = Object.entries(mealCount).sort((a,b) => b[1]-a[1])[0];
+  const minMeal = Object.entries(mealCount).sort((a,b) => a[1]-b[1])[0];
+  const mealNames = { breakfast: '早餐', lunch: '午餐', dinner: '晚餐' };
+  if (maxMeal[1] > 0 && minMeal[1] > 0 && maxMeal[1] >= minMeal[1] * 2) {
+    lines.push(`${mealNames[maxMeal[0]]}记录最多（${maxMeal[1]}次），${mealNames[minMeal[0]]}最少（${minMeal[1]}次）。你的${mealNames[minMeal[0]]}可能在想：我是不是被针对了？`);
+  } else if (mealCount.breakfast === 0 && mealCount.lunch > 0) {
+    lines.push('早餐记录为 0。要么你不吃早餐，要么你忘了记——不管是哪种，早餐都会伤心的。');
+  }
+
+  // 5. 总量吐槽
   if (total >= 20) {
-    lines.push('记录频率拉满，你对待吃饭的认真程度，已经超过了大部分人对工作的态度。');
-  } else if (total >= 15) {
-    lines.push('记录习惯不错，你的饮食日历已经小有厚度了。');
-  } else {
-    lines.push('记录次数不多，但每一笔都是对自己负责的证据。');
+    lines.push(`总计 ${total} 顿饭的记录，你对吃饭的认真程度已经超过了很多人的工作态度。可以考虑出一本《本月吃什么》回忆录。`);
+  } else if (total >= 10) {
+    lines.push(`${total} 顿饭，记录习惯不错。你的饮食日历翻开来看，每一页都写得明明白白。`);
+  } else if (total >= 5) {
+    lines.push(`${total} 笔记录，不多但每一笔都是对自己负责的证据。慢慢来，不着急。`);
   }
 
-  return lines.join(' ');
-}
-
-function generateSuggestion(heavy, stomachBad, total, tagDist) {
-  const suggestions = [];
-
-  if (heavy > total * 0.4) {
-    suggestions.push('下个月试着给清淡食物一些出场机会，不用太多，一周两次就行。你的胃会悄悄给你点赞。');
-  } else if (heavy > 2) {
-    suggestions.push('重口食物偶尔吃吃没事，但别连着来，胃也需要中场休息。');
+  if (lines.length === 0) {
+    return '数据太少，AI 暂时没有灵感。多吃几顿再来找我～';
   }
 
-  if (stomachBad > 2) {
-    suggestions.push('胃不舒服的天数有点多，按时吃饭比什么都重要，你的胃是个认真打工的好器官。');
-  } else if (stomachBad > 0) {
-    suggestions.push('有一两天胃不太舒服，下个月可以提前备点温和的食物，防范于未然。');
-  }
-
-  const hasGreen = tagDist.find(([t]) => t === '清淡养胃');
-  if (!hasGreen && total > 5) {
-    suggestions.push('可以试试一碗粥或一份清汤面，它不会让你失望的——尤其是你的胃。');
-  }
-
-  if (total < 10) {
-    suggestions.push('记录不多没关系，下个月可以从每周记两顿开始，慢慢就会看到自己的饮食规律了。');
-  }
-
-  if (suggestions.length === 0) {
-    suggestions.push('继续保持！你的饮食节奏已经很好了，偶尔试试新店新菜，给每天增添一点新鲜感。');
-  }
-
-  return suggestions.join('<br>');
+  return lines.join('<br><br>');
 }
 
 // ==================== 导航 ====================
