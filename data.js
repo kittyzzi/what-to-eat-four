@@ -2525,23 +2525,23 @@ function hasCravingMatch(craving, mealType) {
 // ==================== 早餐数据库 ====================
 // 主食库
 const BREAKFAST_MAINS = [
-  { id: 'bm_01', name: '水晶饺', emoji: '🥟', desc: '皮薄馅嫩，一口一个不费力。', priceRange: [5, 10] },
-  { id: 'bm_02', name: '煎饺', emoji: '🥟', desc: '底部煎得焦脆，里面还是软的，两种口感一勺端。', priceRange: [5, 10] },
-  { id: 'bm_03', name: '莲蓉包', emoji: '🫘', desc: '白胖松软，莲蓉细腻微甜，早上一口甜到心里。', priceRange: [3, 6] },
-  { id: 'bm_04', name: '南瓜馒头', emoji: '🎃', desc: '南瓜的清香钻进馒头里，淡淡的甜像早晨阳光。', priceRange: [3, 6] },
-  { id: 'bm_05', name: '红糖馒头', emoji: '🍬', desc: '红糖的甜很克制，刚好给早晨多一点温度。', priceRange: [3, 6] },
-  { id: 'bm_06', name: '紫薯包', emoji: '🫐', desc: '甜而不腻，紫薯馅扎实，早上的第一口甜。', priceRange: [3, 6] },
-  { id: 'bm_07', name: '奥尔良肉包', emoji: '🥩', desc: '香辣微甜，肉汁饱满，早上来一个瞬间醒神。', priceRange: [3, 7] },
+  { id: 'bm_01', name: '水晶饺', emoji: '🥟', desc: '趁热吃。凉了那层皮就不叫水晶了。', priceRange: [5, 10] },
+  { id: 'bm_02', name: '煎饺', emoji: '🥟', desc: '底是焦的，心是软的。比你坚强。', priceRange: [5, 10] },
+  { id: 'bm_03', name: '莲蓉包', emoji: '🫘', desc: '甜甜的，软软的。咬之前吹一吹，烫。', priceRange: [3, 6] },
+  { id: 'bm_04', name: '南瓜馒头', emoji: '🎃', desc: '南瓜在哪？你慢慢嚼，它就会出来。', priceRange: [3, 6] },
+  { id: 'bm_05', name: '红糖馒头', emoji: '🍬', desc: '比白馒头贵五毛。但今天值得。', priceRange: [3, 6] },
+  { id: 'bm_06', name: '紫薯包', emoji: '🫐', desc: '紫薯馅。说不上多健康，但就是好吃。', priceRange: [3, 6] },
+  { id: 'bm_07', name: '奥尔良肉包', emoji: '🥩', desc: '你没去过奥尔良。但你吃过这个包子。', priceRange: [3, 7] },
 ];
 
 // 配菜库
 const BREAKFAST_SIDES = [
-  { id: 'bs_01', name: '茶叶蛋', emoji: '🥚', desc: '一颗茶叶蛋，蛋白质到位，朴实但有滋味。', priceRange: [2, 3] },
+  { id: 'bs_01', name: '茶叶蛋', emoji: '🥚', desc: '别小看我。今天的蛋白质KPI靠我完成。', priceRange: [2, 3] },
 ];
 
 // 饮品库
 const BREAKFAST_DRINKS = [
-  { id: 'bd_01', name: '豆浆', emoji: '🥛', desc: '一杯热豆浆，暖手也暖胃，早晨的第一口温柔。', priceRange: [3, 5] },
+  { id: 'bd_01', name: '豆浆', emoji: '🥛', desc: '今天早餐有豆浆。已经赢过昨天的你了。', priceRange: [3, 5] },
 ];
 
 /**
