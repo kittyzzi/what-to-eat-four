@@ -767,7 +767,6 @@ html, body {
   border-radius: 8px;
   transition: background var(--transition);
 }
-.nav-btn:hover { background: var(--primary-light); }
 
 .calendar-weekdays {
   display: grid;
@@ -804,7 +803,6 @@ html, body {
   background: #f0edea;
   border: 2px solid transparent;
   transition: all var(--transition);
-  min-height: 52px;
 }
 
 .cal-cell.empty { background: transparent; }
@@ -813,10 +811,6 @@ html, body {
   cursor: pointer;
   border: 2px solid;
   box-shadow: 0 2px 6px rgba(0,0,0,0.06);
-}
-.cal-cell.has-record:hover {
-  transform: scale(1.08);
-  box-shadow: 0 4px 14px rgba(0,0,0,0.12);
 }
 .cal-cell.has-record:active { transform: scale(0.96); }
 
@@ -1728,12 +1722,29 @@ html, body {
   cursor: pointer;
   transition: all 0.25s;
   box-shadow: var(--card-shadow);
+  outline: none;
+  -webkit-tap-highlight-color: transparent;
 }
 
-.lunch-entry-card:hover {
-  transform: translateY(-2px);
-  box-shadow: var(--card-hover-shadow);
-  border-color: var(--card-hover-border);
+@media (hover: hover) {
+  .lunch-entry-card:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--card-hover-shadow);
+    border-color: var(--card-hover-border);
+  }
+
+  .dinner-entry-card:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--card-hover-shadow);
+    border-color: var(--card-hover-border);
+  }
+
+  .nav-btn:hover { background: var(--primary-light); }
+
+  .cal-cell.has-record:hover {
+    transform: scale(1.08);
+    box-shadow: 0 4px 14px rgba(0,0,0,0.12);
+  }
 }
 
 .lunch-entry-card:active {
@@ -1985,12 +1996,8 @@ html, body {
   cursor: pointer;
   transition: all 0.25s;
   box-shadow: var(--card-shadow);
-}
-
-.dinner-entry-card:hover {
-  transform: translateY(-2px);
-  box-shadow: var(--card-hover-shadow);
-  border-color: var(--card-hover-border);
+  outline: none;
+  -webkit-tap-highlight-color: transparent;
 }
 
 .dinner-entry-card:active {
@@ -2246,7 +2253,7 @@ html, body {
 
   /* 日历移动端适配 — 窄屏下缩小间距防超框 */
   .calendar-weekdays, .calendar-grid { gap: 3px; }
-  .cal-cell { padding: 3px 2px; border-radius: 8px; min-height: 42px; overflow: hidden; }
+  .cal-cell { padding: 3px 2px; border-radius: 8px; overflow: hidden; }
   .cal-date { font-size: 11px; margin-bottom: 0; }
   .cal-food { font-size: 8.5px !important; padding: 1px 2px !important; border-radius: 4px !important; }
   .cal-dot { width: 4px; height: 4px; margin-top: 1px; }
