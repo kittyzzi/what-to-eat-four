@@ -145,6 +145,7 @@ html, body {
   flex: 1;
   padding: 16px 16px 90px;
   overflow-y: auto;
+  overflow-x: hidden;
   position: relative;
   z-index: 1;
 }
@@ -2224,7 +2225,7 @@ html, body {
 /* ===== 响应式 ===== */
 @media (min-width: 480px) {
   #app { box-shadow: 0 0 60px rgba(0,0,0,0.1); }
-  .candidate-card-new { border-radius: 18px; }
+  .candidate-card-new, .lunch-candidate-card, .dinner-candidate-card { border-radius: 18px; }
   .candidates-cards { gap: 14px; }
 }
 
@@ -2233,7 +2234,7 @@ html, body {
   .choice-emoji { font-size: 22px; width: 32px; }
   .result-food-name { font-size: 22px; }
   .candidates-page-title { font-size: 17px; }
-  .candidate-card-new { padding: 12px 10px 10px; border-radius: 14px; gap: 8px; }
+  .candidate-card-new, .lunch-candidate-card, .dinner-candidate-card { padding: 12px 10px 10px; border-radius: 14px; gap: 8px; }
   .candidate-card-name { font-size: 13px; }
   .candidate-card-desc { font-size: 10.5px; }
   .candidate-card-btn { padding: 6px 0; font-size: 12px; border-radius: 10px; }
@@ -2242,4 +2243,14 @@ html, body {
   .candidates-cards { gap: 8px; }
   .breakfast-set-name { font-size: 15px; }
   .breakfast-set-emoji { font-size: 28px; }
+
+  /* 日历移动端适配 — 窄屏下缩小间距防超框 */
+  .calendar-weekdays, .calendar-grid { gap: 3px; }
+  .cal-cell { padding: 3px 2px; border-radius: 8px; min-height: 42px; overflow: hidden; }
+  .cal-date { font-size: 11px; margin-bottom: 0; }
+  .cal-food { font-size: 8.5px !important; padding: 1px 2px !important; border-radius: 4px !important; }
+  .cal-dot { width: 4px; height: 4px; margin-top: 1px; }
+  .cal-empty-dot { width: 3px; height: 3px; margin-top: 1px; }
+  .cal-cell.today { box-shadow: 0 0 0 1.5px #ff5722, 0 0 0 3px rgba(255,87,34,0.2) !important; }
+  .cal-cell.today::after { font-size: 6.5px; padding: 0px 3px; top: -7px; right: 0px; border-radius: 4px; }
 }
